@@ -1,0 +1,133 @@
+-- Library Database (Grupp 5)
+
+-- skapa och använd databasen
+CREATE DATABASE `Library`;
+USE `Library`;
+
+CREATE TABLE T_Member (
+memberID INT NOT NULL AUTO_INCREMENT,
+ssn varchar(13) NOT NULL,
+fullName varchar(100) NOT NULL,
+
+PRIMARY KEY (memberID)
+);
+
+CREATE TABLE T_Member_Phone(
+memberID INT NOT NULL,
+phone VARCHAR(20) NOT NULL,
+PRIMARY KEY(memberID, phone),
+FOREIGN  KEY(memberID) REFERENCES T_Member(memberID)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+);
+ 
+CREATE TABLE T_Member_Email(
+memberID INT NOT NULL,
+email VARCHAR(100) NOT NULL,
+PRIMARY KEY(memberID, email),
+FOREIGN KEY(memberID) REFERENCES T_Member(memberID)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+);
+
+CREATE TABLE T_Book(
+ISBN VARCHAR(20) NOT NULL,
+title VARCHAR(200) NOT NULL,
+PRIMARY KEY(ISBN)
+);
+
+CREATE TABLE T_GENRE(
+genreID INT NOT NULL AUTO_INCREMENT,
+genreName VARCHAR(50) NOT NULL,
+PRIMARY KEY(genreID)
+);
+
+-- skapa samband mellan genre och bok
+CREATE TABLE T_Book_Genre(
+ISBN VARCHAR(20) NOT NULL,
+genreID INT NOT NULL,
+PRIMARY KEY(ISBN,genreID),
+FOREIGN KEY(ISBN) REFERENCES T_Book(ISBN)
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+FOREIGN KEY(genreID) REFERENCES T_Genre(genreID)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+);
+
+CREATE TABLE T_Copy(
+copyID INT NOT NULL AUTO_INCREMENT,
+ISBN VARCHAR(20) NOT NULL,
+PRIMARY KEY(copyID),
+FOREIGN KEY(ISBN) REFERENCES T_BOOK(ISBN)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+);
+
+CREATE TABLE T_Loan(
+borrowID INT NOT NULL AUTO_INCREMENT,
+copyID INT NOT NULL,
+memberID INT NOT NULL,
+borrowDate DATE NOT NULL DEFAULT (CURDATE()),
+dueDate DATE NOT NULL,
+returnDate DATE,
+extensionCount INT DEFAULT 0 CHECK (extensionCount <= 2),
+status ENUM('active', 'returned', 'overdue', 'extended') DEFAULT 'active',
+PRIMARY KEY(borrowID),
+FOREIGN KEY(copyID) REFERENCES T_Copy(copyID)
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+FOREIGN KEY(memberID) REFERENCES T_Member(memberID),
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+-- obs att samma kopia kan inte lånas ut flera gånger samtidigt
+UNIQUE(copyID, borrowDate)
+);
+
+INSERT INTO T_Member(ssn, fullName) VALUES
+('199806033231', 'Ibrahim Awad'),
+('198505152345', 'Ulrika Eriksson'),
+('199212253456', 'Simon Ulin');
+
+INSERT INTO T_Member_Phone (memberID, phone) VALUES 
+-- Member 1 (Ibrahim) har två nummer
+(1, '0728649267'),
+(1, '0701234567'),
+(2, '0709876543'),
+(3, '0731122334');
+
+INSERT INTO T_Member_Email (memberID, email) VALUES 
+-- Member 1 (Ibrahim) har två email
+(1, 'awadibrahim@gmail.com'),
+(1, 'iawad@kth.se'),
+(2, 'ulrik@hotmail.com'),
+(3, 'sssimon@yahoo.com');
+
+INSERT INTO T_Book(ISBN, title) VALUES
+('978-0544003415', 'Lord of the Rings'),
+('978-1284056945', 'Databases Illuminated');
+
+INSERT INTO T_Genre (genreName) VALUES 
+('Computer Science'),
+('Fantasy'),
+('Science Fiction'),
+('Adventure'),
+('DRAMA');
+
+INSERT INTO T_Book_Genre (ISBN, genreID) VALUES 
+('978-1284056945', 1),  
+('978-1284056945', 5),  
+('978-0544003415', 2),  
+('978-0544003415', 4);  
+
+INSERT INTO T_Copy (ISBN, status) VALUES 
+('978-1284056945', 'available'),  
+('978-1284056945', 'available'),  
+('978-0544003415', 'loaned'); 
+
+INSERT INTO T_Loan (copyID, memberID, borrowDate, dueDate, returnDate, extensionCount, status) VALUES 
+(2, 1, '2025-10-15', '2025-10-29', NULL, 0, 'active'),        
+(8, 1, '2025-11-01', '2025-11-15', NULL, 0, 'active'),         
+(2, 3, '2025-09-01', '2025-09-15', '2025-09-14', 0, 'returned'), 
+(5, 3, '2025-09-10', '2025-09-24', '2025-09-20', 0, 'returned'); 
+    
