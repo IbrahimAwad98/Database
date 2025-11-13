@@ -1,6 +1,4 @@
--- Library Database (Grupp 5)
-
--- skapa och använd databasen
+DROP DATABASE IF EXISTS `Library`;
 CREATE DATABASE `Library`;
 USE `Library`;
 
@@ -8,8 +6,14 @@ CREATE TABLE T_Member (
 memberID INT NOT NULL AUTO_INCREMENT,
 ssn varchar(13) NOT NULL,
 fullName varchar(100) NOT NULL,
-
 PRIMARY KEY (memberID)
+);
+
+CREATE TABLE T_Library(
+libraryID INT NOT NULL,
+libraryName VARCHAR(50) NOT NULL,
+libraryAddress VARCHAR (100) NOT NULL,
+PRIMARY KEY (libraryID)
 );
 
 CREATE TABLE T_Member_Phone(
@@ -20,7 +24,7 @@ FOREIGN  KEY(memberID) REFERENCES T_Member(memberID)
 ON DELETE CASCADE
 ON UPDATE CASCADE
 );
- 
+
 CREATE TABLE T_Member_Email(
 memberID INT NOT NULL,
 email VARCHAR(100) NOT NULL,
@@ -32,17 +36,18 @@ ON UPDATE CASCADE
 
 CREATE TABLE T_Book(
 ISBN VARCHAR(20) NOT NULL,
-title VARCHAR(200) NOT NULL,
+title VARCHAR(50) NOT NULL,
+publisher VARCHAR(20) NOT NULL,
 PRIMARY KEY(ISBN)
 );
 
-CREATE TABLE T_GENRE(
+CREATE TABLE T_Genre(
 genreID INT NOT NULL AUTO_INCREMENT,
 genreName VARCHAR(50) NOT NULL,
 PRIMARY KEY(genreID)
 );
 
--- skapa samband mellan genre och bok
+-- (M:N) samband
 CREATE TABLE T_Book_Genre(
 ISBN VARCHAR(20) NOT NULL,
 genreID INT NOT NULL,
@@ -55,11 +60,33 @@ ON DELETE CASCADE
 ON UPDATE CASCADE
 );
 
+CREATE TABLE T_Author(
+authorID INT AUTO_INCREMENT,
+name VARCHAR(100) NOT NULL,
+PRIMARY KEY (authorID)
+);
+
+CREATE TABLE T_Book_Author(
+ISBN VARCHAR(20) NOT NULL,
+authorID INT NOT NULL,
+PRIMARY KEY(ISBN, authorID),
+FOREIGN KEY(ISBN) REFERENCES T_Book(ISBN)
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+FOREIGN KEY(authorID) REFERENCES T_Author(authorID)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+);
+
 CREATE TABLE T_Copy(
 copyID INT NOT NULL AUTO_INCREMENT,
 ISBN VARCHAR(20) NOT NULL,
+libraryID INT NOT NULL,
 PRIMARY KEY(copyID),
-FOREIGN KEY(ISBN) REFERENCES T_BOOK(ISBN)
+FOREIGN KEY(libraryID) REFERENCES T_Library(libraryID)
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+FOREIGN KEY(ISBN) REFERENCES T_Book(ISBN)
 ON DELETE CASCADE
 ON UPDATE CASCADE
 );
@@ -77,57 +104,226 @@ PRIMARY KEY(borrowID),
 FOREIGN KEY(copyID) REFERENCES T_Copy(copyID)
 ON DELETE CASCADE
 ON UPDATE CASCADE,
-FOREIGN KEY(memberID) REFERENCES T_Member(memberID),
+FOREIGN KEY(memberID) REFERENCES T_Member(memberID)
 ON DELETE CASCADE
 ON UPDATE CASCADE,
 -- obs att samma kopia kan inte lånas ut flera gånger samtidigt
 UNIQUE(copyID, borrowDate)
 );
 
+CREATE TABLE T_Book_Queue(
+    ISBN VARCHAR(20) NOT NULL,
+    memberID INT NOT NULL,
+    requestDate DATE NOT NULL DEFAULT (CURDATE()),
+    PRIMARY KEY (ISBN, memberID),
+    FOREIGN KEY(ISBN) REFERENCES T_Book(ISBN)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY(memberID) REFERENCES T_Member(memberID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 INSERT INTO T_Member(ssn, fullName) VALUES
 ('199806033231', 'Ibrahim Awad'),
 ('198505152345', 'Ulrika Eriksson'),
-('199212253456', 'Simon Ulin');
+('199212253456', 'Simon Ulin'),
+('199304047890', 'Johan Karlsson'),
+('200112044789', 'Amine Svensson'),
+('199706124515', 'Hamza Osman');
 
-INSERT INTO T_Member_Phone (memberID, phone) VALUES 
--- Member 1 (Ibrahim) har två nummer
+
+INSERT INTO T_Library(libraryID, libraryName, libraryAddress) VALUES
+(1, 'Bandhagen', 'Bandhangengatan'),
+(2, 'Odenplan', 'Odengatan11');
+
+
+INSERT INTO T_Member_Phone (memberID, phone) VALUES
 (1, '0728649267'),
 (1, '0701234567'),
 (2, '0709876543'),
 (3, '0731122334');
 
-INSERT INTO T_Member_Email (memberID, email) VALUES 
--- Member 1 (Ibrahim) har två email
+INSERT INTO T_Member_Email (memberID, email) VALUES
 (1, 'awadibrahim@gmail.com'),
 (1, 'iawad@kth.se'),
 (2, 'ulrik@hotmail.com'),
 (3, 'sssimon@yahoo.com');
 
-INSERT INTO T_Book(ISBN, title) VALUES
-('978-0544003415', 'Lord of the Rings'),
-('978-1284056945', 'Databases Illuminated');
+INSERT INTO T_Book(ISBN, title, publisher) VALUES
+('978-0544003415', 'Lord of the Rings', 'WEGA'),
+('978-1284056945', 'Databases Illuminated', 'Studentlitteratur');
 
-INSERT INTO T_Genre (genreName) VALUES 
+INSERT INTO T_Genre (genreName) VALUES
 ('Computer Science'),
 ('Fantasy'),
 ('Science Fiction'),
 ('Adventure'),
 ('DRAMA');
 
-INSERT INTO T_Book_Genre (ISBN, genreID) VALUES 
-('978-1284056945', 1),  
-('978-1284056945', 5),  
-('978-0544003415', 2),  
-('978-0544003415', 4);  
+INSERT INTO T_Book_Genre (ISBN, genreID) VALUES
+('978-1284056945', 1),
+('978-1284056945', 5),
+('978-0544003415', 2),
+('978-0544003415', 4);
 
-INSERT INTO T_Copy (ISBN, status) VALUES 
-('978-1284056945', 'available'),  
-('978-1284056945', 'available'),  
-('978-0544003415', 'loaned'); 
+INSERT INTO T_Author(authorID, name) VALUES
+(1, 'Douglas Adams'),
+(2, 'Erik Patrik'),
+(3, 'Ibrahim Patrik');
 
-INSERT INTO T_Loan (copyID, memberID, borrowDate, dueDate, returnDate, extensionCount, status) VALUES 
-(2, 1, '2025-10-15', '2025-10-29', NULL, 0, 'active'),        
-(8, 1, '2025-11-01', '2025-11-15', NULL, 0, 'active'),         
-(2, 3, '2025-09-01', '2025-09-15', '2025-09-14', 0, 'returned'), 
-(5, 3, '2025-09-10', '2025-09-24', '2025-09-20', 0, 'returned'); 
-    
+INSERT INTO T_Book_Author(ISBN, AuthorID)
+VALUES('978-1284056945', 1);
+
+INSERT INTO T_Copy (ISBN, libraryID) VALUES
+('978-1284056945', 1),
+('978-1284056945', 2),
+('978-0544003415', 2);
+
+INSERT INTO T_Loan (copyID, memberID, borrowDate, dueDate, returnDate, extensionCount, status) VALUES
+(2, 1, '2025-10-15', '2025-10-29', NULL, 0, 'active'),
+(3, 1, '2025-11-01', '2025-11-15', NULL, 0, 'active'),
+(1, 1, '2025-01-01', '2025-01-15', '2025-01-10', 0, 'returned'),
+(1, 1, '2025-02-01', '2025-02-15', '2025-02-13', 0, 'returned'),
+(2, 1, '2025-03-01', '2025-03-15', '2025-03-14', 0, 'returned'),
+(3, 1, '2025-04-01', '2025-04-15', '2025-04-13', 0, 'returned'),
+(1, 1, '2025-05-01', '2025-05-15', '2025-05-10', 0, 'returned'),
+(2, 1, '2025-06-01', '2025-06-15', '2025-06-12', 0, 'returned'),
+(3, 1, '2025-07-01', '2025-07-15', '2025-07-13', 0, 'returned'),
+
+(1, 2, '2025-01-10', '2025-01-24', '2025-01-20', 0, 'returned'),
+(2, 2, '2025-02-10', '2025-02-24', '2025-02-23', 0, 'returned'),
+(3, 2, '2025-03-10', '2025-03-24', '2025-03-21', 0, 'returned'),
+(1, 2, '2025-04-10', '2025-04-24', '2025-04-22', 0, 'returned'),
+(2, 2, '2025-05-10', '2025-05-24', '2025-05-23', 0, 'returned'),
+(1, 2, '2025-01-05', '2025-01-19', '2025-01-18', 0, 'returned'),
+(2, 2, '2025-09-20', '2025-09-30', NULL, 0, 'active'),
+(2, 3, '2025-09-01', '2025-09-15', '2025-09-14', 0, 'returned'),
+(1, 3, '2025-09-10', '2025-09-24', '2025-09-20', 0, 'returned');
+
+INSERT INTO T_Book_Queue (ISBN, memberID, requestDate) VALUES
+('978-1284056945', 1, '2025-11-01'),
+('978-1284056945', 2, '2025-11-02'),
+('978-1284056945', 3, '2025-11-03'),
+('978-0544003415', 1, '2025-11-04'),
+('978-0544003415', 2, '2025-11-05'),
+('978-0544003415', 3, '2025-11-06'),
+('978-1284056945', 4, '2025-11-11'),
+('978-1284056945', 5, '2025-11-12'),
+('978-1284056945', 6, '2025-11-13');
+
+-- 6
+-- SELECT * FROM T_Book WHERE publisher = 'Studentlitteratur';
+
+-- 7
+-- SELECT COUNT(*) AS nrOFcopies FROM T_Copy c JOIN T_Book b ON b.ISBN = c.ISBN WHERE b.title = 'Databases Illuminated';
+
+-- 8
+/*
+SELECT DISTINCT cu.*
+FROM T_Member cu
+JOIN T_Loan l ON cu.memberID=l.memberID
+JOIN T_Copy c ON l.copyID=c.copyID
+JOIN T_Book b ON c.ISBN=b.ISBN
+WHERE b.title ='Lord of the Rings';
+*/
+
+-- 9
+/*
+SELECT b.title, COUNT(c.copyID) AS copy
+FROM T_Book b
+LEFT JOIN T_Copy c ON b.ISBN=c.ISBN
+GROUP BY b.ISBN, b.title;
+*/
+
+-- 11
+/*
+SELECT m.memberID, m.ssn, m.fullName,
+COALESCE(GROUP_CONCAT(DISTINCT mp.phone ORDER BY mp.phone SEPARATOR ', '), '') AS phones,
+COALESCE(GROUP_CONCAT(DISTINCT me.email ORDER BY me.email SEPARATOR ', '), '') AS emails
+FROM T_Member AS m
+JOIN T_Loan AS l ON l.memberID = m.memberID
+JOIN T_Copy AS c ON c.CopyID=l.CopyID
+JOIN T_Book AS b ON b.ISBN = c.ISBN
+JOIN T_Book_Author AS ba ON ba.ISBN = b.ISBN
+JOIN T_Author AS a ON a.authorID = ba.authorID
+LEFT JOIN T_Member_Phone AS mp ON mp.memberID = m.memberID
+LEFT JOIN T_Member_Email AS me ON me.memberID = m.memberID
+WHERE a.name = 'Douglas Adams'
+GROUP BY m.memberID, m.ssn, m.fullName;
+*/
+
+-- 12
+/*
+SELECT m.memberID, m.fullName, COUNT(*) AS total_loans
+FROM T_Member AS m
+JOIN T_Loan AS l ON l.memberID = m.memberID
+GROUP BY m.memberID, m.fullName
+HAVING COUNT(*) > 5
+ORDER BY total_loans DESC, m.fullName;
+*/
+
+-- 13
+/* 
+SELECT DISTINCT m.memberID, m.fullName, m.ssn
+FROM T_Member AS m
+JOIN T_Loan AS l ON l.memberID = m.memberID
+WHERE l.returnDate IS NULL
+AND l.dueDate < CURDATE();
+*/
+
+-- 14
+/*
+SELECT a.name AS AuthorName, COUNT(*) AS totalCopies
+FROM T_Author AS a
+JOIN T_Book_Author AS ba ON a.authorID = ba.authorID
+JOIN T_Book AS b ON ba.ISBN = b.ISBN
+JOIN T_Copy AS c ON b.ISBN = c.ISBN
+GROUP BY a.authorID, a.name
+HAVING COUNT(*) > 5
+ORDER BY a.name;
+*/
+
+-- 15
+/*
+SELECT b.title,
+COUNT(DISTINCT c.copyID) AS totalCopies,
+SUM(CASE WHEN l.returnDate IS NULL THEN 1 ELSE 0 END) AS activeLoans,
+ROUND(
+    (SUM(CASE WHEN l.returnDate IS NULL THEN 1 ELSE 0 END)
+    / COUNT(DISTINCT c.copyID)) * 100, 1
+) AS loanRatePercent
+FROM T_Book AS b
+JOIN T_Copy AS c ON b.ISBN = c.ISBN
+LEFT JOIN T_Loan AS l ON c.copyID = l.copyID
+GROUP BY b.ISBN, b.title
+HAVING (SUM(CASE WHEN l.returnDate IS NULL THEN 1 ELSE 0 END)
+        / COUNT(DISTINCT c.copyID)) >= 0.8;
+*/
+
+-- 16
+/*
+SELECT b.title, a.name AS authorName, m.fullName AS borrowerName,
+l.borrowDate, l.dueDate
+FROM T_Loan AS l
+JOIN T_Copy AS c ON l.copyID = c.copyID
+JOIN T_Book AS b ON c.ISBN = b.ISBN
+JOIN T_Book_Author AS ba ON b.ISBN = ba.ISBN
+JOIN T_Author AS a ON ba.authorID = a.authorID
+JOIN T_Member AS m ON l.memberID = m.memberID
+WHERE l.returnDate IS NULL
+ORDER BY l.dueDate, l.borrowDate, a.name;
+*/
+
+-- 17
+/*
+SELECT b.ISBN, b.title,
+COUNT(DISTINCT q.memberID) AS queueSize,
+COUNT(DISTINCT c.copyID) AS nrOfCopies
+FROM T_Book AS b
+JOIN T_Book_Queue AS q ON b.ISBN = q.ISBN
+LEFT JOIN T_Copy AS c ON b.ISBN = c.ISBN
+GROUP BY b.ISBN, b.title
+HAVING COUNT(DISTINCT q.memberID) > 5
+ORDER BY nrOfCopies DESC;
+*/
